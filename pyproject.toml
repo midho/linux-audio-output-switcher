@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "linux-audio-output-switcher"
+version = "0.1.0"
+description = "Cycle selected Linux audio outputs with an optional Wayland popup"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "linux-audio-output-switcher contributors" }]
+keywords = ["Linux", "COSMIC", "PipeWire", "PulseAudio", "audio"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+[project.scripts]
+linux-audio-output-switcher = "linux_audio_output_switcher.cli:main"
+
+[project.urls]
+Source = "https://github.com/midho/linux-audio-output-switcher"
+Issues = "https://github.com/midho/linux-audio-output-switcher/issues"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]

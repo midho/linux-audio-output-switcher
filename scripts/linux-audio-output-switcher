@@ -1,0 +1,18 @@
+#!/bin/sh
+set -eu
+
+data_home=${XDG_DATA_HOME:-"$HOME/.local/share"}
+project_dir="$data_home/linux-audio-output-switcher"
+
+if [ ! -d "$project_dir/linux_audio_output_switcher" ]; then
+    printf '%s\n' "linux-audio-output-switcher is not installed in $project_dir" >&2
+    exit 1
+fi
+
+if [ -n "${PYTHONPATH:-}" ]; then
+    export PYTHONPATH="$project_dir:$PYTHONPATH"
+else
+    export PYTHONPATH="$project_dir"
+fi
+
+exec python3 -m linux_audio_output_switcher "$@"

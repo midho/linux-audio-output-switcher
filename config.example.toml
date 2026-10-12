@@ -1,0 +1,37 @@
+version = 1
+move_playing_streams = true
+pactl_timeout_seconds = 4.0
+auto_include_new = true
+auto_headphones = "unmute"
+auto_other = "mute"
+
+[popup]
+enabled = true
+duration_ms = 2850
+bottom_margin = 180
+all_monitors = false
+# Optional exact model reported by GTK, for example "LG ULTRAGEAR".
+# Ignored when all_monitors is true. Leave empty to let the compositor choose.
+monitor_model = ""
+
+[[outputs]]
+id = "headset"
+label = "Headset"
+icon = "headphones"
+mute_on_activate = "unmute"
+include = true
+
+[outputs.match]
+"device.serial" = "REPLACE_WITH_DEVICE_SERIAL"
+"device.profile.name" = "analog-stereo"
+
+[[outputs]]
+id = "speakers"
+label = "Speakers"
+icon = "speakers"
+mute_on_activate = "mute"
+include = true
+
+[outputs.match]
+"device.bus_path" = "REPLACE_WITH_DEVICE_PATH"
+"device.profile.name" = "hdmi-stereo"
