@@ -1,69 +1,97 @@
 # Linux Audio Output Switcher
 
-Cycle through the Linux audio outputs connected right now. New outputs join the
-cycle automatically unless you have excluded them. The switcher works with
-PulseAudio and PipeWire's PulseAudio-compatible service. It can move playing
-audio and show an optional Wayland popup without taking keyboard focus.
+Use one key to switch between speakers, headphones and other connected audio
+outputs. Choose the outputs you want, then cycle through them in order.
 
-## Supported in version 0.1.0
+## Features
 
-- Linux with Python 3.11 or newer and a `pactl` client that supports JSON
-  output. PulseAudio's `pactl` gained this feature in version 16.0.
-- PulseAudio or PipeWire's PulseAudio-compatible service.
-- Audio outputs visible to `pactl`, including USB, HDMI, Bluetooth, PCI, and
-  virtual outputs.
-- Automatic inclusion of new outputs and skipping of disconnected ones.
-- Keyboard shortcuts from any desktop that can run a command.
-- An optional GTK Layer Shell popup on Wayland, tested with COSMIC.
+- Cycle two or more chosen outputs.
+- New devices join automatically.
+- Disconnected devices leave the cycle, and saved exclusions still apply when they reconnect.
+- Detected headphones unmute on selection, while other new outputs start muted by default.
+- Move playing audio when the app allows it.
+- Choose one screen for the popup, or show it on all screens.
 
-The switcher changes the default output. It can also move playing streams that
-are currently on one of its managed outputs and optionally mute or unmute the
-new output. It does not change microphones, output volume, or stream volume.
-An application that manages its own output may ignore the system default or
-move itself again.
+## Screenshots
 
-## Install
+<img src="docs/screenshots/headphones.png" alt="Audio output popup with a headphones icon and the label Headphones" width="250">
+<img src="docs/screenshots/speakers.png" alt="Audio output popup with a speakers icon and the label Speakers" width="210">
 
-The switching core needs Python 3.11 or newer and `pactl` JSON output support.
-The client must accept `pactl --format=json`. Compatible backports
-also work. This is a requirement for the `pactl` command-line client even when
-the audio server is PipeWire. The popup also needs GTK 3, PyGObject, GTK Layer
-Shell, and a Wayland desktop.
+Real popup windows, captured with example labels.
 
-On Debian, Ubuntu, or Pop!_OS, install them with:
+## Before you start
 
-```bash
-sudo apt install pulseaudio-utils python3-gi gir1.2-gtk-3.0 gir1.2-gtklayershell-0.1
+You need Linux, Python 3.11 or newer, and PulseAudio or PipeWire's
+PulseAudio-compatible service. The `pactl` command must support JSON output,
+available in version 16.0 or a compatible backport.
+
+The popup needs Wayland and GTK Layer Shell. It was tested with COSMIC.
+Audio switching also works on other desktops. On X11 or a compositor without
+GTK Layer Shell, turn the popup off in the settings file.
+
+## Quick start on Pop!_OS 24.04
+
+1. Open a terminal. Install the required packages:
+
+   ```bash
+   sudo apt install git python3 pulseaudio-utils python3-gi gir1.2-gtk-3.0 gir1.2-gtklayershell-0.1
+   ```
+
+   On another Linux distribution, install the equivalent packages with its
+   package manager. The popup packages are optional.
+
+2. Download and install the program:
+
+   ```bash
+   git clone https://github.com/midho/linux-audio-output-switcher.git
+   cd linux-audio-output-switcher
+   ./install.sh
+   ```
+
+3. Choose your outputs when setup asks.
+
+   Press Enter to include all connected outputs. Or enter their numbers in
+   the order you want, such as `1 3 2`. Any connected outputs you leave out
+   stay excluded. Devices connected later join automatically.
+
+   You can finish setup with one output, but cycling needs at least two
+   included outputs connected at the same time.
+
+4. Check the setup and show the current output:
+
+   ```bash
+   ~/.local/bin/linux-audio-output-switcher doctor
+   ~/.local/bin/linux-audio-output-switcher show
+   ```
+
+   These commands do not switch the output.
+
+5. Try one switch:
+
+   ```bash
+   ~/.local/bin/linux-audio-output-switcher next
+   ```
+
+   With the generated settings, detected headphones unmute when selected.
+   Other outputs start muted. Use your desktop's sound controls to unmute
+   them when ready.
+
+## Choose your key
+
+Open **Settings → Keyboard → Keyboard shortcuts → Custom** in COSMIC. Add a
+custom shortcut, paste this command and choose a free key combination:
+
+```text
+linux-audio-output-switcher next
 ```
 
-Then run:
+Each press selects the next connected output. This works with two outputs
+or a longer list. To cycle backward, use `linux-audio-output-switcher previous`.
 
-```bash
-git clone https://github.com/midho/linux-audio-output-switcher.git
-cd linux-audio-output-switcher
-./install.sh
-```
-
-On first install, the configuration tool lists connected outputs. Press Enter
-to include all of them, or enter their numbers in cycle order. Outputs you
-leave out are excluded. A headset connected later joins on its own. You can
-finish setup with fewer than two connected outputs, but cycling waits until
-two included outputs are available.
-
-On another distribution, install the equivalent packages from its package
-manager. The popup dependencies are optional.
-
-The installer writes to your user folders. It does not run `sudo`, edit desktop
-shortcuts, or overwrite a configuration you already have. There is no
-background service. Before copying files, it checks JSON support without
-contacting the audio server. `doctor` then checks the client, server connection,
-configuration, and selected outputs.
-
-Run the health check:
-
-```bash
-linux-audio-output-switcher doctor
-```
+See the [COSMIC guide](docs/integrations/cosmic.md),
+[other-desktop guide](docs/integrations/generic-desktop.md), or
+[Input Remapper and Vaydeer guide](docs/integrations/input-remapper.md). They
+also explain how to use the full command path if your shortcut cannot find it.
 
 ## Commands
 
@@ -79,115 +107,47 @@ linux-audio-output-switcher doctor
 linux-audio-output-switcher configure
 ```
 
-`toggle` is an alias for `next`. With two included outputs, both commands
-switch between the pair. If the current default is excluded, `next` selects
-the first available output and `previous` selects the last.
-
-The cycle uses saved outputs first, in their configured order, then new outputs
-sorted by description and name. Disconnected and excluded outputs are skipped.
-`next`, `previous`, and `toggle` need at least two included, connected outputs.
-`set` reports a disconnected or excluded target and leaves the default alone.
-Run `list` to see each connected output's cycle ID, or to check why it is not
-in the cycle.
+`toggle` means the same as `next`. `set OUTPUT_ID` selects a particular output.
+Run `list` to find its ID. Disconnected or excluded targets cannot be selected.
 
 ## Configuration
 
-The default file is:
+Your settings file is:
 
 ```text
 ~/.config/linux-audio-output-switcher/config.toml
 ```
 
-Run configuration again if you want to change the initial choices. This
-replaces saved labels and mute rules, so keep a copy if you have edited them:
+The [settings guide](docs/configuration.md) covers output order, exclusions,
+friendly names, Bluetooth matching and mute rules. Use
+[config.example.toml](config.example.toml) as a reference.
 
-```bash
-linux-audio-output-switcher configure --force
-```
+- Set `auto_include_new = false` to keep a fixed list of outputs.
+- Change `auto_headphones` and `auto_other` to choose `"mute"`, `"unmute"` or
+  `"keep"` for newly discovered devices.
+- Set `move_playing_streams = false` to leave existing playback where it is.
+- Set `all_monitors = true` in the `[popup]` table to show the popup on every screen.
 
-For a non-interactive setup, use `--all`, or pass the exact sink names shown by
-`list`. Sinks present now but left out of `--sink` are saved as exclusions:
+Saved device rules take priority over automatic rules. If an unfamiliar
+headset starts muted, give it its own rule in the settings file.
 
-```bash
-linux-audio-output-switcher configure --all
-linux-audio-output-switcher configure --sink SINK_NAME_1 --sink SINK_NAME_2
-```
-
-The generated file stores device properties that survive a restart. It keeps
-rules for the outputs seen during setup. New outputs are discovered on each
-command and are not written to the file. Temporary sink indexes are not used
-as identities. A saved matching rule must identify one connected output. An
-ambiguous match stops the switch.
-
-Run `list --properties` to see the automatic stable match for each connected
-output. A manual `[outputs.match]` table may use any string property reported
-by `pactl`, plus the special keys `name` and `description`. Add more properties
-when two devices would otherwise match the same rule.
-
-Important settings:
-
-- `auto_include_new`: add connected outputs that do not match a saved rule.
-  New configurations set this to `true`. Older configurations without this
-  setting keep their fixed-list behavior until you add `auto_include_new = true`.
-- `auto_headphones` and `auto_other`: choose `"mute"`, `"unmute"`, or `"keep"`
-  for newly discovered headphones and other outputs. Defaults are `"unmute"`
-  and `"mute"`. This happens before the output becomes active.
-- `move_playing_streams`: move active playback from managed outputs to the new
-  output. Set it to `false` to change only the default for future playback.
-- `popup.monitor_model`: optional exact GTK monitor model for popup placement.
-  Leave it empty to let the Wayland compositor choose the display. It is
-  ignored when `popup.all_monitors` is `true`.
-- `popup.all_monitors`: show an identical popup on every connected monitor.
-  The default is `false`.
-- `[[outputs]].mute_on_activate`: use `"mute"`, `"unmute"`, or `"keep"` for
-  that output. A manually written rule defaults to `"keep"` when this setting
-  is omitted. Setup writes `"unmute"` for detected headphones and `"mute"`
-  for other outputs. The rule is applied before the output becomes active,
-  so a muted output cannot briefly play sound.
-- `[[outputs]].include`: set this to `false` to keep a matched output out of
-  the cycle. Exclusions saved during setup stay excluded after reconnecting.
-- `[[outputs]]`: saved cycle order, label, icon, mute behavior, and property
-  match rules. A saved rule takes priority over automatic detection.
-
-Bluetooth rules use the device address, not its current audio profile. Saved
-labels, exclusions, and mute rules therefore stay with the same device when it
-changes between music and call modes. Two Bluetooth devices remain separate
-because their addresses differ.
-
-Headphone detection checks `device.form_factor` first, then the device icon
-and description. It treats the standard `hands-free` form as a headset. Other
-or unrecognized devices follow `auto_other` and are muted by default. If a
-headset lacks useful metadata,
-give it a saved `[[outputs]]` rule with `mute_on_activate = "unmute"`.
-
-Your configuration may contain device serial numbers or Bluetooth addresses.
-Keep it private. Git ignores `config.toml` in this repository.
-
-While the popup is visible, another switch updates its label and icon on each
-selected monitor and restarts the timer. Commands take a numbered place under
-the switch lock. The popup ignores an older result if a newer command has taken
-its place. One process owns the popup display at a time. If a second process
-starts late, it sends its update to the owner and exits. After the timer, the
-popup exits and the next switch gets a fresh Wayland surface. A private runtime
-socket carries updates, and the next request replaces a socket left by a
-crashed popup. Popup work runs after the audio switch. Its launch lock covers
-only the short socket and ownership changes. Process startup and
-shutdown replacement happen outside that lock, so a newer update can proceed
-while an older popup is still starting or stopping. A full queue drops an
-optional update, and startup has a one-second limit. An update queued as the
-popup expires or shuts down is shown by that process or handed to a
-replacement. A command rejected because another switch is running reports the
-problem in the terminal without changing the popup.
-
-## Connect a keyboard control
-
-- [Generic Linux desktop shortcuts](docs/integrations/generic-desktop.md)
-- [COSMIC shortcuts](docs/integrations/cosmic.md)
-- [Input Remapper and Vaydeer](docs/integrations/input-remapper.md)
-
-The installer does not edit either application's configuration files.
+Keep the file private. It can contain device serial numbers or Bluetooth
+addresses. Re-running `configure --force` replaces saved labels and mute
+rules, so make a copy before using it.
 
 ## Troubleshooting
+
+- **A device is missing:** connect it and check that it appears in your
+  desktop's sound settings and in `linux-audio-output-switcher list`.
+- **Speakers are silent after switching:** they start muted with the default
+  setup. Unmute them with your desktop's sound controls.
+- **One app stays on the old output:** reopen its playback or choose the
+  output inside that app.
+- **No popup:** switching still works. Check the optional Wayland dependencies,
+  or set `enabled = false` in the `[popup]` table to disable it.
+- **JSON support error:** install `pactl` 16.0 or newer, or a compatible backport.
+
+Run these checks if the problem remains:
 
 ```bash
 linux-audio-output-switcher doctor
@@ -195,40 +155,32 @@ linux-audio-output-switcher list
 pactl info
 ```
 
-- If an output is missing, connect it and make sure it appears in your desktop's
-  sound settings and in `linux-audio-output-switcher list`.
-- If `doctor` says JSON output is unsupported, install `pactl` 16.0 or newer,
-  or a distribution package that backports `--format=json` support.
-- If JSON support passes but the server connection fails, check that PulseAudio
-  or PipeWire's PulseAudio-compatible service is running for the current user.
-- If a match becomes ambiguous, run `configure --force` and select the outputs
-  again.
-- If one application stays on the old output, reopen its playback or choose the
-  output inside that application.
-- The popup is optional. Switching still works when GTK Layer Shell is missing.
-- If a popup process crashes, the next popup request replaces its stale private
-  runtime socket. Unrelated files are never removed from that path.
-- On X11 or a Wayland compositor without GTK Layer Shell, set
-  `popup.enabled = false`. The command-line switching core still works.
+The switcher changes playback outputs. Microphones and volume levels are
+left alone. An application that manages its own output can ignore the system
+default or move itself again.
 
 ## Update and remove
 
-Run `./install.sh` again to update program files. Your configuration is kept.
+Open a terminal in the project folder to download an update and install it:
 
-Remove the program while keeping the configuration:
+```bash
+git pull --ff-only
+./install.sh
+```
+
+Your settings are kept. To remove the program while keeping them:
 
 ```bash
 ./uninstall.sh
 ```
 
-The uninstaller removes the installed program files and their Python cache
-files. It keeps your configuration and unrelated files in the same directory.
-
-Also remove the configuration:
+To remove the settings too:
 
 ```bash
 ./uninstall.sh --purge
 ```
+
+The uninstaller keeps unrelated files. There is no background service to stop.
 
 ## Development
 
